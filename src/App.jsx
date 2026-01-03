@@ -139,7 +139,7 @@ function App() {
   const [sortDirection, setSortDirection] = useState('desc') // 'asc' or 'desc'
   const [darkMode, setDarkMode] = useState(false)
 
-  // Load assets from localStorage on mount
+  // Load assets and dark mode preference from localStorage on mount
   useEffect(() => {
     try {
       const savedAssets = localStorage.getItem('portfolioAssets')
@@ -152,10 +152,33 @@ function App() {
           console.error('Invalid assets data in localStorage:', parsed)
         }
       }
+      
+      // Load dark mode preference
+      const savedDarkMode = localStorage.getItem('darkMode')
+      if (savedDarkMode !== null) {
+        const isDark = savedDarkMode === 'true'
+        setDarkMode(isDark)
+        // Apply immediately
+        if (isDark) {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+      }
     } catch (error) {
-      console.error('Error loading assets from localStorage:', error)
+      console.error('Error loading from localStorage:', error)
     }
   }, [])
+  
+  // Apply dark mode class to document when darkMode changes
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+    localStorage.setItem('darkMode', darkMode.toString())
+  }, [darkMode])
 
   // Save assets to localStorage whenever assets change (but not on initial empty load)
   const isInitialMount = useRef(true)
@@ -950,9 +973,9 @@ function App() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-200">
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
                         <th 
-                          className="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('ticker')}
                         >
                           <div className="flex items-center">
@@ -965,7 +988,7 @@ function App() {
                           </div>
                         </th>
                         <th 
-                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('shares')}
                         >
                           <div className="flex items-center justify-end">
@@ -978,7 +1001,7 @@ function App() {
                           </div>
                         </th>
                         <th 
-                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('price')}
                         >
                           <div className="flex items-center justify-end">
@@ -991,7 +1014,7 @@ function App() {
                           </div>
                         </th>
                         <th 
-                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('value')}
                         >
                           <div className="flex items-center justify-end">
@@ -1004,7 +1027,7 @@ function App() {
                           </div>
                         </th>
                         <th 
-                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('percentage')}
                         >
                           <div className="flex items-center justify-end">
