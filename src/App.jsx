@@ -108,7 +108,7 @@ function App() {
   const [isManualAsset, setIsManualAsset] = useState(false)
   const [manualAssetName, setManualAssetName] = useState('')
   const [manualAssetValue, setManualAssetValue] = useState('')
-  const [sortColumn, setSortColumn] = useState('value') // 'ticker', 'shares', 'value', 'percentage'
+  const [sortColumn, setSortColumn] = useState('value') // 'ticker', 'shares', 'price', 'value', 'percentage'
   const [sortDirection, setSortDirection] = useState('desc') // 'asc' or 'desc'
 
   // Load assets from localStorage on mount
@@ -268,6 +268,59 @@ function App() {
     }
   }
 
+  const refreshAllPrices = async () => {
+    setLoading(true)
+    setError('')
+    
+    // Get all assets that have tickers and can be refreshed
+    const assetsToRefresh = assets.filter(asset => 
+      asset.ticker && 
+      !asset.isCash && 
+      !asset.isManualAsset && 
+      asset.shares
+    )
+    
+    if (assetsToRefresh.length === 0) {
+      setError('No assets available to refresh')
+      setLoading(false)
+      return
+    }
+    
+    try {
+      // Refresh prices for all assets in parallel
+      const refreshPromises = assetsToRefresh.map(async (asset) => {
+        try {
+          const price = await fetchStockPrice(asset.ticker)
+          return { id: asset.id, price, success: true }
+        } catch (err) {
+          return { id: asset.id, ticker: asset.ticker, success: false, error: err.message }
+        }
+      })
+      
+      const results = await Promise.all(refreshPromises)
+      
+      // Update assets with new prices
+      setAssets(prevAssets => prevAssets.map(asset => {
+        const result = results.find(r => r.id === asset.id)
+        if (result && result.success && asset.shares) {
+          return { ...asset, price: result.price, value: asset.shares * result.price }
+        }
+        return asset
+      }))
+      
+      // Show errors if any failed
+      const failed = results.filter(r => !r.success)
+      if (failed.length > 0) {
+        const failedTickers = failed.map(f => f.ticker).join(', ')
+        setError(`Failed to refresh: ${failedTickers}`)
+      }
+    } catch (err) {
+      setError('Error refreshing prices: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const startEdit = (asset) => {
     setEditingId(asset.id)
     if (asset.isCash) {
@@ -374,14 +427,22 @@ function App() {
     if (existing) {
       existing.value += asset.value
       // Sum up shares (only for non-cash, non-manual assets)
-      if (!asset.isCash && !asset.isManualAsset && asset.shares) {
-        existing.shares = (existing.shares || 0) + asset.shares
+      if (!asset.isCash && !asset.isManualAsset && asset.shares && asset.price) {
+        const oldShares = existing.shares || 0
+        const oldTotalValue = oldShares * (existing.avgPrice || 0)
+        const newShares = asset.shares
+        const newTotalValue = newShares * asset.price
+        
+        existing.shares = oldShares + newShares
+        // Calculate weighted average price
+        existing.avgPrice = existing.shares > 0 ? (oldTotalValue + newTotalValue) / existing.shares : asset.price
       }
     } else {
       acc.push({ 
         name: tickerName, 
         value: asset.value,
-        shares: (!asset.isCash && !asset.isManualAsset && asset.shares) ? asset.shares : null
+        shares: (!asset.isCash && !asset.isManualAsset && asset.shares) ? asset.shares : null,
+        avgPrice: (!asset.isCash && !asset.isManualAsset && asset.price) ? asset.price : null
       })
     }
     return acc
@@ -636,7 +697,19 @@ function App() {
 
             {/* Asset List */}
             <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Your Assets</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-800">Your Assets</h2>
+                {assets.filter(a => a.ticker && !a.isCash && !a.isManualAsset).length > 0 && (
+                  <button
+                    onClick={refreshAllPrices}
+                    disabled={loading}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors font-medium disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    title="Refresh all stock and crypto prices"
+                  >
+                    {loading ? 'Refreshing...' : 'Refresh All Prices'}
+                  </button>
+                )}
+              </div>
               {assets.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">No assets added yet</p>
               ) : (
@@ -865,6 +938,19 @@ function App() {
                         </th>
                         <th 
                           className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          onClick={() => handleSort('price')}
+                        >
+                          <div className="flex items-center justify-end">
+                            Per Share Price
+                            {sortColumn === 'price' && (
+                              <span className="ml-2 text-blue-600">
+                                {sortDirection === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
                           onClick={() => handleSort('value')}
                         >
                           <div className="flex items-center justify-end">
@@ -906,6 +992,11 @@ function App() {
                             <td className="py-3 px-4 text-right text-gray-700">
                               {item.shares !== null && item.shares !== undefined 
                                 ? item.shares.toLocaleString('en-US', { maximumFractionDigits: 4 })
+                                : '—'}
+                            </td>
+                            <td className="py-3 px-4 text-right text-gray-700">
+                              {item.avgPrice !== null && item.avgPrice !== undefined 
+                                ? `$${item.avgPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                 : '—'}
                             </td>
                             <td className="py-3 px-4 text-right text-gray-700">
