@@ -45,20 +45,32 @@ const fetchStockPrice = async (ticker) => {
     return await fetchBitcoinPrice()
   }
   
-  // Use CORS proxy to access Yahoo Finance API
+  // Use CORS proxy to access Yahoo Finance API with timeout
   try {
-    // Method 1: Using allorigins CORS proxy
+    // Method 1: Using allorigins CORS proxy with timeout
     const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${upperTicker}`
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`
     
-    const response = await fetch(proxyUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      }
-    })
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout - the API took too long to respond')), 15000)
+    )
+    
+    // Race between fetch and timeout
+    const response = await Promise.race([
+      fetch(proxyUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
+      }),
+      timeoutPromise
+    ])
     
     if (!response.ok) {
+      if (response.status === 408 || response.status === 504) {
+        throw new Error('Request timeout - please try again or enter price manually')
+      }
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     
@@ -69,6 +81,11 @@ const fetchStockPrice = async (ticker) => {
     }
     
     const data = JSON.parse(proxyData.contents)
+    
+    // Check for errors in Yahoo Finance response
+    if (data.chart?.error) {
+      throw new Error(`Ticker "${upperTicker}" not found. Please verify the ticker symbol is correct.`)
+    }
     
     if (data.chart && data.chart.result && data.chart.result[0]) {
       const price = data.chart.result[0].meta?.regularMarketPrice
@@ -88,7 +105,17 @@ const fetchStockPrice = async (ticker) => {
     throw new Error('Price data not found in response')
   } catch (error) {
     console.error('Error fetching stock price:', error)
-    throw new Error(`Failed to fetch price for ${upperTicker}. ${error.message}. Please check the ticker symbol and try again.`)
+    
+    // Provide more helpful error messages
+    if (error.message.includes('timeout') || error.message.includes('408') || error.message.includes('504')) {
+      throw new Error(`Request timed out for ${upperTicker}. The ticker may not be available, or the API is slow. Please try again or enter the price manually.`)
+    }
+    
+    if (error.message.includes('not found')) {
+      throw new Error(`Ticker "${upperTicker}" not found. Please verify the ticker symbol is correct, or enter the price manually.`)
+    }
+    
+    throw new Error(`Failed to fetch price for ${upperTicker}. ${error.message}. Please check the ticker symbol and try again, or enter the price manually.`)
   }
 }
 
