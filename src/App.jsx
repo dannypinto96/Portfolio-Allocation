@@ -556,8 +556,12 @@ function App() {
   })
 
   const renderLabel = (entry) => {
-    const roundedPercent = Math.round(parseFloat(entry.percentage) || 0)
-    return `${entry.name}: ${roundedPercent}%`
+    const percentage = parseFloat(entry.percentage) || 0
+    // Only show label inside the pie slice if it's 5% or more
+    if (percentage >= 5) {
+      return entry.name // Just show the ticker name inside the slice
+    }
+    return '' // Don't show label for slices below 5%
   }
 
   return (
@@ -967,7 +971,7 @@ function App() {
                       data={tickerDataWithPercentage}
                       cx="50%"
                       cy="50%"
-                      labelLine={true}
+                      labelLine={false}
                       label={renderLabel}
                       outerRadius={120}
                       innerRadius={40}
@@ -980,7 +984,13 @@ function App() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value) => `$${Math.round(value).toLocaleString('en-US')}`}
+                      formatter={(value, name, props) => {
+                        const percentage = parseFloat(props.payload.percentage) || 0
+                        return [
+                          `$${Math.round(value).toLocaleString('en-US')} (${Math.round(percentage)}%)`,
+                          props.payload.name
+                        ]
+                      }}
                     />
                     <Legend />
                   </PieChart>
