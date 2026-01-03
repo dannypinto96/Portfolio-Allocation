@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 
 const COLORS = [
@@ -105,18 +105,43 @@ function App() {
   const [editPrice, setEditPrice] = useState('')
   const [isCash, setIsCash] = useState(false)
   const [cashAmount, setCashAmount] = useState('')
+  const [isManualAsset, setIsManualAsset] = useState(false)
+  const [manualAssetName, setManualAssetName] = useState('')
+  const [manualAssetValue, setManualAssetValue] = useState('')
+  const [sortColumn, setSortColumn] = useState('value') // 'ticker', 'shares', 'value', 'percentage'
+  const [sortDirection, setSortDirection] = useState('desc') // 'asc' or 'desc'
 
   // Load assets from localStorage on mount
   useEffect(() => {
-    const savedAssets = localStorage.getItem('portfolioAssets')
-    if (savedAssets) {
-      setAssets(JSON.parse(savedAssets))
+    try {
+      const savedAssets = localStorage.getItem('portfolioAssets')
+      if (savedAssets) {
+        const parsed = JSON.parse(savedAssets)
+        // Ensure it's an array
+        if (Array.isArray(parsed)) {
+          setAssets(parsed)
+        } else {
+          console.error('Invalid assets data in localStorage:', parsed)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading assets from localStorage:', error)
     }
   }, [])
 
-  // Save assets to localStorage whenever assets change
+  // Save assets to localStorage whenever assets change (but not on initial empty load)
+  const isInitialMount = useRef(true)
   useEffect(() => {
-    localStorage.setItem('portfolioAssets', JSON.stringify(assets))
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return // Skip saving on initial mount
+    }
+    
+    try {
+      localStorage.setItem('portfolioAssets', JSON.stringify(assets))
+    } catch (error) {
+      console.error('Error saving assets to localStorage:', error)
+    }
   }, [assets])
 
   const addAsset = async (e) => {
@@ -127,7 +152,7 @@ function App() {
     if (isCash) {
       const amount = parseFloat(cashAmount)
       if (amount > 0) {
-        setAssets([...assets, {
+        setAssets(prevAssets => [...prevAssets, {
           id: Date.now(),
           ticker: 'CASH',
           shares: 1,
@@ -142,6 +167,36 @@ function App() {
         setError('Cash amount must be greater than 0')
         return
       }
+    }
+    
+    // Handle manual asset addition
+    if (isManualAsset) {
+      const assetName = manualAssetName.trim()
+      const assetValue = parseFloat(manualAssetValue)
+      
+      if (!assetName) {
+        setError('Asset name is required')
+        return
+      }
+      
+      if (assetValue <= 0) {
+        setError('Asset value must be greater than 0')
+        return
+      }
+      
+      setAssets(prevAssets => [...prevAssets, {
+        id: Date.now(),
+        ticker: assetName.toUpperCase(),
+        name: assetName,
+        shares: 1,
+        price: assetValue,
+        value: assetValue,
+        isManualAsset: true
+      }])
+      setManualAssetName('')
+      setManualAssetValue('')
+      setIsManualAsset(false)
+      return
     }
     
     // Handle stock/crypto addition
@@ -174,7 +229,7 @@ function App() {
         
         const value = numShares * price
         
-        setAssets([...assets, {
+        setAssets(prevAssets => [...prevAssets, {
           id: Date.now(),
           ticker: upperTicker,
           shares: numShares,
@@ -218,6 +273,9 @@ function App() {
     if (asset.isCash) {
       setEditPrice(asset.value ? asset.value.toString() : '')
       setEditShares('')
+    } else if (asset.isManualAsset) {
+      setEditPrice(asset.value ? asset.value.toString() : '')
+      setEditShares('')
     } else {
       setEditShares(asset.shares ? asset.shares.toString() : '')
       setEditPrice(asset.price ? asset.price.toString() : '')
@@ -257,6 +315,24 @@ function App() {
         }
         return a
       }))
+    } else if (asset.isManualAsset) {
+      // For manual assets, just update the value
+      const newValue = parseFloat(editPrice)
+      if (newValue <= 0) {
+        setError('Asset value must be greater than 0')
+        return
+      }
+      
+      setAssets(prevAssets => prevAssets.map(a => {
+        if (a.id === editingId) {
+          return {
+            ...a,
+            price: newValue,
+            value: newValue
+          }
+        }
+        return a
+      }))
     } else {
       // For stocks/crypto, update shares and price
       const newShares = parseFloat(editShares)
@@ -292,12 +368,21 @@ function App() {
 
   // Group by ticker for pie chart
   const tickerData = assets.reduce((acc, asset) => {
-    const tickerName = asset.ticker || asset.name || 'Unknown'
+    // For manual assets, use the name; for others, use ticker
+    const tickerName = asset.isManualAsset ? (asset.name || asset.ticker) : (asset.ticker || asset.name || 'Unknown')
     const existing = acc.find(item => item.name === tickerName)
     if (existing) {
       existing.value += asset.value
+      // Sum up shares (only for non-cash, non-manual assets)
+      if (!asset.isCash && !asset.isManualAsset && asset.shares) {
+        existing.shares = (existing.shares || 0) + asset.shares
+      }
     } else {
-      acc.push({ name: tickerName, value: asset.value })
+      acc.push({ 
+        name: tickerName, 
+        value: asset.value,
+        shares: (!asset.isCash && !asset.isManualAsset && asset.shares) ? asset.shares : null
+      })
     }
     return acc
   }, [])
@@ -307,6 +392,48 @@ function App() {
     ...item,
     percentage: totalValue > 0 ? ((item.value / totalValue) * 100).toFixed(1) : 0
   }))
+
+  // Handle column sorting
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      // Toggle direction if clicking the same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      // Set new column and default to descending
+      setSortColumn(column)
+      setSortDirection('desc')
+    }
+  }
+
+  // Sort the data based on selected column and direction
+  const sortedTickerData = [...tickerDataWithPercentage].sort((a, b) => {
+    let aValue, bValue
+
+    switch (sortColumn) {
+      case 'ticker':
+        aValue = a.name.toLowerCase()
+        bValue = b.name.toLowerCase()
+        break
+      case 'shares':
+        aValue = a.shares !== null && a.shares !== undefined ? a.shares : -1
+        bValue = b.shares !== null && b.shares !== undefined ? b.shares : -1
+        break
+      case 'value':
+        aValue = a.value
+        bValue = b.value
+        break
+      case 'percentage':
+        aValue = parseFloat(a.percentage)
+        bValue = parseFloat(b.percentage)
+        break
+      default:
+        return 0
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+    return 0
+  })
 
   const renderLabel = (entry) => {
     return `${entry.name}: ${entry.percentage}%`
@@ -328,24 +455,51 @@ function App() {
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Add Asset</h2>
               <form onSubmit={addAsset} className="space-y-4">
-                <div className="flex items-center pb-2 border-b border-gray-200">
-                  <input
-                    type="checkbox"
-                    id="isCash"
-                    checked={isCash}
-                    onChange={(e) => {
-                      setIsCash(e.target.checked)
-                      setTicker('')
-                      setShares('')
-                      setCashAmount('')
-                      setError('')
-                    }}
-                    className="mr-2"
-                    disabled={loading}
-                  />
-                  <label htmlFor="isCash" className="text-sm font-medium text-gray-700">
-                    Add Cash
-                  </label>
+                <div className="space-y-2 pb-2 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isCash"
+                      checked={isCash}
+                      onChange={(e) => {
+                        setIsCash(e.target.checked)
+                        setIsManualAsset(false)
+                        setTicker('')
+                        setShares('')
+                        setCashAmount('')
+                        setManualAssetName('')
+                        setManualAssetValue('')
+                        setError('')
+                      }}
+                      className="mr-2"
+                      disabled={loading}
+                    />
+                    <label htmlFor="isCash" className="text-sm font-medium text-gray-700">
+                      Add Cash
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="isManualAsset"
+                      checked={isManualAsset}
+                      onChange={(e) => {
+                        setIsManualAsset(e.target.checked)
+                        setIsCash(false)
+                        setTicker('')
+                        setShares('')
+                        setCashAmount('')
+                        setManualAssetName('')
+                        setManualAssetValue('')
+                        setError('')
+                      }}
+                      className="mr-2"
+                      disabled={loading}
+                    />
+                    <label htmlFor="isManualAsset" className="text-sm font-medium text-gray-700">
+                      Add Manual Asset (Not on Public Markets)
+                    </label>
+                  </div>
                 </div>
                 
                 {isCash ? (
@@ -365,6 +519,41 @@ function App() {
                       disabled={loading}
                     />
                   </div>
+                ) : isManualAsset ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Asset Name
+                      </label>
+                      <input
+                        type="text"
+                        value={manualAssetName}
+                        onChange={(e) => setManualAssetName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., Private Equity, Real Estate, Art Collection"
+                        required
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Enter a name for your asset</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Total Value ($)
+                      </label>
+                      <input
+                        type="number"
+                        value={manualAssetValue}
+                        onChange={(e) => setManualAssetValue(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="50000"
+                        min="0"
+                        step="0.01"
+                        required
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Enter the total current value</p>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <div>
@@ -377,7 +566,7 @@ function App() {
                         onChange={(e) => setTicker(e.target.value.toUpperCase())}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="e.g., AAPL, MSFT, TSLA, BTC"
-                        required={!isCash}
+                        required={!isCash && !isManualAsset}
                         disabled={loading}
                       />
                       <p className="text-xs text-gray-500 mt-1">Supports stocks (AAPL, MSFT) and Bitcoin (BTC)</p>
@@ -473,6 +662,18 @@ function App() {
                                 step="0.01"
                               />
                             </div>
+                          ) : asset.isManualAsset ? (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Total Value ($)</label>
+                              <input
+                                type="number"
+                                value={editPrice}
+                                onChange={(e) => setEditPrice(e.target.value)}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                min="0"
+                                step="0.01"
+                              />
+                            </div>
                           ) : (
                             <>
                               <div>
@@ -524,11 +725,16 @@ function App() {
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
                             <div className="font-medium text-gray-800">
-                              {asset.isCash ? '💵 Cash' : (asset.ticker || asset.name)}
+                              {asset.isCash ? '💵 Cash' : asset.isManualAsset ? `📦 ${asset.name || asset.ticker}` : (asset.ticker || asset.name)}
                             </div>
-                            {!asset.isCash && (
+                            {!asset.isCash && !asset.isManualAsset && (
                               <div className="text-sm text-gray-600">
                                 {asset.shares ? `${asset.shares} shares` : ''} {asset.price ? `@ $${asset.price.toFixed(2)}` : ''}
+                              </div>
+                            )}
+                            {asset.isManualAsset && (
+                              <div className="text-sm text-gray-600">
+                                Manual Asset
                               </div>
                             )}
                             <div className="text-sm font-semibold text-gray-800">
@@ -543,7 +749,7 @@ function App() {
                             >
                               ✎
                             </button>
-                            {asset.ticker && (
+                            {asset.ticker && !asset.isManualAsset && (
                               <button
                                 onClick={() => refreshPrice(asset.id, asset.ticker)}
                                 disabled={loading}
@@ -631,15 +837,62 @@ function App() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Ticker</th>
-                        <th className="text-right py-3 px-4 font-semibold text-gray-700">Value</th>
-                        <th className="text-right py-3 px-4 font-semibold text-gray-700">Percentage</th>
+                        <th 
+                          className="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          onClick={() => handleSort('ticker')}
+                        >
+                          <div className="flex items-center">
+                            Ticker
+                            {sortColumn === 'ticker' && (
+                              <span className="ml-2 text-blue-600">
+                                {sortDirection === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          onClick={() => handleSort('shares')}
+                        >
+                          <div className="flex items-center justify-end">
+                            Shares
+                            {sortColumn === 'shares' && (
+                              <span className="ml-2 text-blue-600">
+                                {sortDirection === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          onClick={() => handleSort('value')}
+                        >
+                          <div className="flex items-center justify-end">
+                            Value
+                            {sortColumn === 'value' && (
+                              <span className="ml-2 text-blue-600">
+                                {sortDirection === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                        <th 
+                          className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          onClick={() => handleSort('percentage')}
+                        >
+                          <div className="flex items-center justify-end">
+                            Percentage
+                            {sortColumn === 'percentage' && (
+                              <span className="ml-2 text-blue-600">
+                                {sortDirection === 'asc' ? '↑' : '↓'}
+                              </span>
+                            )}
+                          </div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {tickerDataWithPercentage
-                        .sort((a, b) => b.value - a.value)
-                        .map((item, index) => (
+                      {sortedTickerData.map((item, index) => (
                           <tr key={item.name} className="border-b border-gray-100 hover:bg-gray-50">
                             <td className="py-3 px-4">
                               <div className="flex items-center">
@@ -649,6 +902,11 @@ function App() {
                                 />
                                 <span className="font-medium text-gray-800">{item.name}</span>
                               </div>
+                            </td>
+                            <td className="py-3 px-4 text-right text-gray-700">
+                              {item.shares !== null && item.shares !== undefined 
+                                ? item.shares.toLocaleString('en-US', { maximumFractionDigits: 4 })
+                                : '—'}
                             </td>
                             <td className="py-3 px-4 text-right text-gray-700">
                               ${item.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
