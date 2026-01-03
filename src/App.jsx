@@ -478,7 +478,7 @@ function App() {
   // Calculate percentages
   const tickerDataWithPercentage = tickerData.map(item => ({
     ...item,
-    percentage: totalValue > 0 ? ((item.value / totalValue) * 100).toFixed(1) : 0
+    percentage: totalValue > 0 ? Math.round((item.value / totalValue) * 100) : 0
   }))
 
   // Handle column sorting
@@ -524,7 +524,8 @@ function App() {
   })
 
   const renderLabel = (entry) => {
-    return `${entry.name}: ${entry.percentage}%`
+    const roundedPercent = Math.round(parseFloat(entry.percentage) || 0)
+    return `${entry.name}: ${roundedPercent}%`
   }
 
   return (
@@ -829,7 +830,7 @@ function App() {
                             </div>
                             {!asset.isCash && !asset.isManualAsset && (
                               <div className="text-sm text-gray-600">
-                                {asset.shares ? `${asset.shares} shares` : ''} {asset.price ? `@ $${asset.price.toFixed(2)}` : ''}
+                                {asset.shares ? `${Math.round(asset.shares)} shares` : ''} {asset.price ? `@ $${Math.round(asset.price)}` : ''}
                               </div>
                             )}
                             {asset.isManualAsset && (
@@ -838,7 +839,7 @@ function App() {
                               </div>
                             )}
                             <div className="text-sm font-semibold text-gray-800">
-                              ${asset.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ${Math.round(asset.value).toLocaleString('en-US')}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -883,7 +884,7 @@ function App() {
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <div className="text-sm text-gray-600 mb-1">Total Portfolio Value</div>
                 <div className="text-3xl font-bold text-gray-800">
-                  ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${Math.round(totalValue).toLocaleString('en-US')}
                 </div>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-6">
@@ -910,18 +911,20 @@ function App() {
                       data={tickerDataWithPercentage}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
+                      labelLine={true}
                       label={renderLabel}
                       outerRadius={120}
+                      innerRadius={40}
                       fill="#8884d8"
                       dataKey="value"
+                      paddingAngle={2}
                     >
                       {tickerDataWithPercentage.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value) => `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                      formatter={(value) => `$${Math.round(value).toLocaleString('en-US')}`}
                     />
                     <Legend />
                   </PieChart>
@@ -1018,16 +1021,16 @@ function App() {
                             </td>
                             <td className="py-3 px-4 text-right text-gray-700">
                               {item.shares !== null && item.shares !== undefined 
-                                ? item.shares.toLocaleString('en-US', { maximumFractionDigits: 4 })
+                                ? Math.round(item.shares).toLocaleString('en-US')
                                 : '—'}
                             </td>
                             <td className="py-3 px-4 text-right text-gray-700">
                               {item.avgPrice !== null && item.avgPrice !== undefined 
-                                ? `$${item.avgPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                ? `$${Math.round(item.avgPrice).toLocaleString('en-US')}`
                                 : '—'}
                             </td>
                             <td className="py-3 px-4 text-right text-gray-700">
-                              ${item.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ${Math.round(item.value).toLocaleString('en-US')}
                             </td>
                             <td className="py-3 px-4 text-right text-gray-700 font-semibold">
                               {item.percentage}%
