@@ -155,18 +155,25 @@ function App() {
       
       // Load dark mode preference
       const savedDarkMode = localStorage.getItem('darkMode')
+      const root = document.documentElement
       if (savedDarkMode !== null) {
         const isDark = savedDarkMode === 'true'
         setDarkMode(isDark)
         // Apply immediately
         if (isDark) {
-          document.documentElement.classList.add('dark')
+          root.classList.add('dark')
         } else {
-          document.documentElement.classList.remove('dark')
+          root.classList.remove('dark')
         }
+      } else {
+        // No saved preference, ensure we start in light mode
+        root.classList.remove('dark')
+        setDarkMode(false)
       }
     } catch (error) {
       console.error('Error loading from localStorage:', error)
+      // Ensure light mode on error
+      document.documentElement.classList.remove('dark')
     }
   }, [])
   
