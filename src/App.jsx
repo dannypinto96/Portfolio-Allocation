@@ -137,6 +137,7 @@ function App() {
   const [manualAssetValue, setManualAssetValue] = useState('')
   const [sortColumn, setSortColumn] = useState('value') // 'ticker', 'shares', 'price', 'value', 'percentage'
   const [sortDirection, setSortDirection] = useState('desc') // 'asc' or 'desc'
+  const [darkMode, setDarkMode] = useState(false)
 
   // Load assets from localStorage on mount
   useEffect(() => {
@@ -529,22 +530,32 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Portfolio Asset Allocation Tracker
-          </h1>
-          <p className="text-gray-600">Track and visualize your investment portfolio</p>
+        <div className="flex justify-between items-center mb-8">
+          <div className="text-center flex-1">
+            <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-2">
+              Portfolio Asset Allocation Tracker
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">Track and visualize your investment portfolio</p>
+          </div>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+            title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {darkMode ? '☀️' : '🌙'}
+            <span className="text-sm font-medium">{darkMode ? 'Light' : 'Dark'}</span>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Input Form */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Add Asset</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">Add Asset</h2>
               <form onSubmit={addAsset} className="space-y-4">
-                <div className="space-y-2 pb-2 border-b border-gray-200">
+                <div className="space-y-2 pb-2 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -563,7 +574,7 @@ function App() {
                       className="mr-2"
                       disabled={loading}
                     />
-                    <label htmlFor="isCash" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="isCash" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Add Cash
                     </label>
                   </div>
@@ -585,7 +596,7 @@ function App() {
                       className="mr-2"
                       disabled={loading}
                     />
-                    <label htmlFor="isManualAsset" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="isManualAsset" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Add Manual Asset (Not on Public Markets)
                     </label>
                   </div>
@@ -600,7 +611,7 @@ function App() {
                       type="number"
                       value={cashAmount}
                       onChange={(e) => setCashAmount(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="10000"
                       min="0"
                       step="0.01"
@@ -611,64 +622,64 @@ function App() {
                 ) : isManualAsset ? (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Asset Name
                       </label>
                       <input
                         type="text"
                         value={manualAssetName}
                         onChange={(e) => setManualAssetName(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="e.g., Private Equity, Real Estate, Art Collection"
                         required
                         disabled={loading}
                       />
-                      <p className="text-xs text-gray-500 mt-1">Enter a name for your asset</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter a name for your asset</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Total Value ($)
                       </label>
                       <input
                         type="number"
                         value={manualAssetValue}
                         onChange={(e) => setManualAssetValue(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="50000"
                         min="0"
                         step="0.01"
                         required
                         disabled={loading}
                       />
-                      <p className="text-xs text-gray-500 mt-1">Enter the total current value</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter the total current value</p>
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Ticker Symbol
                       </label>
                       <input
                         type="text"
                         value={ticker}
                         onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="e.g., AAPL, MSFT, TSLA, BTC"
                         required={!isCash && !isManualAsset}
                         disabled={loading}
                       />
-                      <p className="text-xs text-gray-500 mt-1">Supports stocks (AAPL, MSFT) and Bitcoin (BTC)</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Supports stocks (AAPL, MSFT) and Bitcoin (BTC)</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Number of Shares/Coins
                       </label>
                       <input
                         type="number"
                         value={shares}
                         onChange={(e) => setShares(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="10"
                         min="0"
                         step="0.0001"
@@ -687,7 +698,7 @@ function App() {
                     className="mr-2"
                     disabled={loading}
                   />
-                  <label htmlFor="manualPrice" className="text-sm text-gray-700">
+                  <label htmlFor="manualPrice" className="text-sm text-gray-700 dark:text-gray-300">
                     Enter price manually
                   </label>
                 </div>
@@ -700,7 +711,7 @@ function App() {
                       type="number"
                       value={manualPrice}
                       onChange={(e) => setManualPrice(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="150.00"
                       min="0"
                       step="0.01"
@@ -709,7 +720,7 @@ function App() {
                   </div>
                 )}
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-2 rounded-md text-sm">
                     {error}
                   </div>
                 )}
@@ -724,9 +735,9 @@ function App() {
             </div>
 
             {/* Asset List */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-800">Your Assets</h2>
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">Your Assets</h2>
                 {assets.filter(a => a.ticker && !a.isCash && !a.isManualAsset).length > 0 && (
                   <button
                     onClick={refreshAllPrices}
@@ -739,38 +750,38 @@ function App() {
                 )}
               </div>
               {assets.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No assets added yet</p>
+                <p className="text-gray-500 dark:text-gray-400 text-center py-4">No assets added yet</p>
               ) : (
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {assets.map((asset) => (
                     <div
                       key={asset.id}
-                      className={`p-3 rounded-md transition-colors ${editingId === asset.id ? 'bg-blue-50 border-2 border-blue-300' : 'bg-gray-50 hover:bg-gray-100'}`}
+                      className={`p-3 rounded-md transition-colors ${editingId === asset.id ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                     >
                       {editingId === asset.id ? (
                         // Edit mode
                         <div className="space-y-3">
-                          <div className="font-medium text-gray-800 mb-2">{asset.ticker || asset.name}</div>
+                          <div className="font-medium text-gray-800 dark:text-white mb-2">{asset.ticker || asset.name}</div>
                           {asset.isCash ? (
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Cash Amount ($)</label>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cash Amount ($)</label>
                               <input
                                 type="number"
                                 value={editPrice}
                                 onChange={(e) => setEditPrice(e.target.value)}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 min="0"
                                 step="0.01"
                               />
                             </div>
                           ) : asset.isManualAsset ? (
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Total Value ($)</label>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Total Value ($)</label>
                               <input
                                 type="number"
                                 value={editPrice}
                                 onChange={(e) => setEditPrice(e.target.value)}
-                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 min="0"
                                 step="0.01"
                               />
@@ -778,23 +789,23 @@ function App() {
                           ) : (
                             <>
                               <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Shares/Coins</label>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Shares/Coins</label>
                                 <input
                                   type="number"
                                   value={editShares}
                                   onChange={(e) => setEditShares(e.target.value)}
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   min="0"
                                   step="0.0001"
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Price per Share/Coin ($)</label>
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Price per Share/Coin ($)</label>
                                 <input
                                   type="number"
                                   value={editPrice}
                                   onChange={(e) => setEditPrice(e.target.value)}
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   min="0"
                                   step="0.01"
                                 />
@@ -825,20 +836,20 @@ function App() {
                         // Display mode
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
-                            <div className="font-medium text-gray-800">
+                            <div className="font-medium text-gray-800 dark:text-white">
                               {asset.isCash ? '💵 Cash' : asset.isManualAsset ? `📦 ${asset.name || asset.ticker}` : (asset.ticker || asset.name)}
                             </div>
                             {!asset.isCash && !asset.isManualAsset && (
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
                                 {asset.shares ? `${Math.round(asset.shares)} shares` : ''} {asset.price ? `@ $${Math.round(asset.price)}` : ''}
                               </div>
                             )}
                             {asset.isManualAsset && (
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
                                 Manual Asset
                               </div>
                             )}
-                            <div className="text-sm font-semibold text-gray-800">
+                            <div className="text-sm font-semibold text-gray-800 dark:text-white">
                               ${Math.round(asset.value).toLocaleString('en-US')}
                             </div>
                           </div>
@@ -881,27 +892,27 @@ function App() {
           <div className="lg:col-span-2">
             {/* Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Total Portfolio Value</div>
-                <div className="text-3xl font-bold text-gray-800">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Portfolio Value</div>
+                <div className="text-3xl font-bold text-gray-800 dark:text-white">
                   ${Math.round(totalValue).toLocaleString('en-US')}
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Number of Assets</div>
-                <div className="text-3xl font-bold text-gray-800">{assets.length}</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Number of Assets</div>
+                <div className="text-3xl font-bold text-gray-800 dark:text-white">{assets.length}</div>
               </div>
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="text-sm text-gray-600 mb-1">Unique Tickers</div>
-                <div className="text-3xl font-bold text-gray-800">{tickerData.length}</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Unique Tickers</div>
+                <div className="text-3xl font-bold text-gray-800 dark:text-white">{tickerData.length}</div>
               </div>
             </div>
 
             {/* Pie Chart */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Asset Allocation by Ticker</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">Asset Allocation by Ticker</h2>
               {tickerData.length === 0 ? (
-                <div className="flex items-center justify-center h-64 text-gray-500">
+                <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
                   Add assets to see your allocation chart
                 </div>
               ) : (
@@ -934,8 +945,8 @@ function App() {
 
             {/* Ticker Breakdown Table */}
             {tickerData.length > 0 && (
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">Ticker Breakdown</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">Ticker Breakdown</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -947,59 +958,59 @@ function App() {
                           <div className="flex items-center">
                             Ticker
                             {sortColumn === 'ticker' && (
-                              <span className="ml-2 text-blue-600">
+                              <span className="ml-2 text-blue-600 dark:text-blue-400">
                                 {sortDirection === 'asc' ? '↑' : '↓'}
                               </span>
                             )}
                           </div>
                         </th>
                         <th 
-                          className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('shares')}
                         >
                           <div className="flex items-center justify-end">
                             Shares
                             {sortColumn === 'shares' && (
-                              <span className="ml-2 text-blue-600">
+                              <span className="ml-2 text-blue-600 dark:text-blue-400">
                                 {sortDirection === 'asc' ? '↑' : '↓'}
                               </span>
                             )}
                           </div>
                         </th>
                         <th 
-                          className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('price')}
                         >
                           <div className="flex items-center justify-end">
                             Per Share Price
                             {sortColumn === 'price' && (
-                              <span className="ml-2 text-blue-600">
+                              <span className="ml-2 text-blue-600 dark:text-blue-400">
                                 {sortDirection === 'asc' ? '↑' : '↓'}
                               </span>
                             )}
                           </div>
                         </th>
                         <th 
-                          className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('value')}
                         >
                           <div className="flex items-center justify-end">
                             Value
                             {sortColumn === 'value' && (
-                              <span className="ml-2 text-blue-600">
+                              <span className="ml-2 text-blue-600 dark:text-blue-400">
                                 {sortDirection === 'asc' ? '↑' : '↓'}
                               </span>
                             )}
                           </div>
                         </th>
                         <th 
-                          className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                          className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
                           onClick={() => handleSort('percentage')}
                         >
                           <div className="flex items-center justify-end">
                             Percentage
                             {sortColumn === 'percentage' && (
-                              <span className="ml-2 text-blue-600">
+                              <span className="ml-2 text-blue-600 dark:text-blue-400">
                                 {sortDirection === 'asc' ? '↑' : '↓'}
                               </span>
                             )}
@@ -1009,30 +1020,30 @@ function App() {
                     </thead>
                     <tbody>
                       {sortedTickerData.map((item, index) => (
-                          <tr key={item.name} className="border-b border-gray-100 hover:bg-gray-50">
+                          <tr key={item.name} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="py-3 px-4">
                               <div className="flex items-center">
                                 <div
                                   className="w-4 h-4 rounded-full mr-2"
                                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                 />
-                                <span className="font-medium text-gray-800">{item.name}</span>
+                                <span className="font-medium text-gray-800 dark:text-white">{item.name}</span>
                               </div>
                             </td>
-                            <td className="py-3 px-4 text-right text-gray-700">
+                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">
                               {item.shares !== null && item.shares !== undefined 
                                 ? Math.round(item.shares).toLocaleString('en-US')
                                 : '—'}
                             </td>
-                            <td className="py-3 px-4 text-right text-gray-700">
+                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">
                               {item.avgPrice !== null && item.avgPrice !== undefined 
                                 ? `$${Math.round(item.avgPrice).toLocaleString('en-US')}`
                                 : '—'}
                             </td>
-                            <td className="py-3 px-4 text-right text-gray-700">
+                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">
                               ${Math.round(item.value).toLocaleString('en-US')}
                             </td>
-                            <td className="py-3 px-4 text-right text-gray-700 font-semibold">
+                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300 font-semibold">
                               {item.percentage}%
                             </td>
                           </tr>
