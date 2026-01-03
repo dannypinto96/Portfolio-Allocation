@@ -172,10 +172,11 @@ function App() {
   
   // Apply dark mode class to document when darkMode changes
   useEffect(() => {
+    const root = document.documentElement
     if (darkMode) {
-      document.documentElement.classList.add('dark')
+      root.classList.add('dark')
     } else {
-      document.documentElement.classList.remove('dark')
+      root.classList.remove('dark')
     }
     localStorage.setItem('darkMode', darkMode.toString())
   }, [darkMode])
@@ -562,14 +563,28 @@ function App() {
             </h1>
             <p className="text-gray-600 dark:text-gray-300">Track and visualize your investment portfolio</p>
           </div>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
-            title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {darkMode ? '☀️' : '🌙'}
-            <span className="text-sm font-medium">{darkMode ? 'Light' : 'Dark'}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Light</span>
+            <button
+              onClick={() => {
+                const newDarkMode = !darkMode
+                setDarkMode(newDarkMode)
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                darkMode ? 'bg-blue-600' : 'bg-gray-300'
+              }`}
+              role="switch"
+              aria-checked={darkMode}
+              aria-label="Toggle dark mode"
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  darkMode ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Dark</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
