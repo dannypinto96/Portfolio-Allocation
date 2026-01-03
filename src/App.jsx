@@ -557,11 +557,42 @@ function App() {
 
   const renderLabel = (entry) => {
     const percentage = parseFloat(entry.percentage) || 0
-    // Only show label inside the pie slice if it's 5% or more
-    if (percentage >= 5) {
-      return entry.name // Just show the ticker name inside the slice
+    // Only show label inside the pie slice if it's 4% or more
+    if (percentage >= 4) {
+      return `${entry.name}: ${Math.round(percentage)}%` // Show ticker name and percentage inside the slice
     }
-    return '' // Don't show label for slices below 5%
+    return '' // Don't show label for slices below 4%
+  }
+
+  const renderLabelLine = (props) => {
+    const { cx, cy, midAngle, innerRadius, outerRadius, percentage } = props
+    const RADIAN = Math.PI / 180
+    const percentValue = parseFloat(percentage) || 0
+    
+    // Only show label line if percentage is 4% or more
+    if (percentValue < 4) {
+      return null
+    }
+    
+    // Calculate line positions - centered with the label
+    // Start from the middle of the slice (where the label is)
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+    const x1 = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y1 = cy + radius * Math.sin(-midAngle * RADIAN)
+    // End at the outer edge with some padding
+    const x2 = cx + (outerRadius + 10) * Math.cos(-midAngle * RADIAN)
+    const y2 = cy + (outerRadius + 10) * Math.sin(-midAngle * RADIAN)
+    
+    return (
+      <line
+        x1={x1}
+        y1={y1}
+        x2={x2}
+        y2={y2}
+        stroke="#666"
+        strokeWidth={1}
+      />
+    )
   }
 
   return (
@@ -971,7 +1002,7 @@ function App() {
                       data={tickerDataWithPercentage}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
+                      labelLine={renderLabelLine}
                       label={renderLabel}
                       outerRadius={120}
                       innerRadius={40}
